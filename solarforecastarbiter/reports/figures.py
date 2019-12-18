@@ -115,10 +115,8 @@ def _obs_color(interval_length):
     return obs_color
 
 
-def _calculate_boolean_filter_indices(timeseries_value_cds, pair_index):
-    pair_indices = [True if idx == pair_index else False
-                    for idx in timeseries_value_cds.data['pair_index']]
-    return pair_indices
+def _boolean_filter_indices_by_pair(value_cds, pair_index):
+    return value_cds.data['pair_index'] == pair_index
 
 
 def _extract_metadata_from_cds(metadata_cds, hash_, hash_key):
@@ -167,7 +165,7 @@ def timeseries(timeseries_value_cds, timeseries_meta_cds,
     for obs_hash in np.unique(timeseries_meta_cds.data['observation_hash']):
         metadata = _extract_metadata_from_cds(
             timeseries_meta_cds, obs_hash, 'observation_hash')
-        pair_indices = _calculate_boolean_filter_indices(
+        pair_indices = _boolean_filter_indices_by_pair(
             timeseries_value_cds, metadata['pair_index'])
         view = CDSView(source=timeseries_value_cds, filters=[
             BooleanFilter(pair_indices)
@@ -185,7 +183,7 @@ def timeseries(timeseries_value_cds, timeseries_meta_cds,
     for fx_hash in np.unique(timeseries_meta_cds.data['forecast_hash']):
         metadata = _extract_metadata_from_cds(
             timeseries_meta_cds, fx_hash, 'forecast_hash')
-        pair_indices = _calculate_boolean_filter_indices(
+        pair_indices = _boolean_filter_indices_by_pair(
             timeseries_value_cds, metadata['pair_index'])
         view = CDSView(source=timeseries_value_cds,
                        filters=[BooleanFilter(pair_indices)])
@@ -262,7 +260,7 @@ def scatter(timeseries_value_cds, timeseries_meta_cds, units):
     for fxhash in np.unique(timeseries_meta_cds.data['forecast_hash']):
         metadata = _extract_metadata_from_cds(
             timeseries_meta_cds, fxhash, 'forecast_hash')
-        pair_indices = _calculate_boolean_filter_indices(
+        pair_indices = _boolean_filter_indices_by_pair(
             timeseries_value_cds, metadata['pair_index'])
         view = CDSView(source=timeseries_value_cds,
                        filters=[BooleanFilter(pair_indices)])
