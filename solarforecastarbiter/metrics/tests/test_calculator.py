@@ -19,6 +19,7 @@ LIST_OF_CATEGORIES = list(datamodel.ALLOWED_CATEGORIES.keys())
 def create_processed_fxobs(create_datetime_index):
     def _create_processed_fxobs(fxobs, fx_values, obs_values):
         return datamodel.ProcessedForecastObservation(
+            fxobs.forecast.name,
             fxobs,
             fxobs.forecast.interval_value_type,
             fxobs.forecast.interval_length,

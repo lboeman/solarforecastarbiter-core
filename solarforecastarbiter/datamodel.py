@@ -1060,6 +1060,7 @@ class ProcessedForecastObservation(BaseModel):
     Hold the processed forecast and observation data with the resampling
     parameters
     """
+    name: str
     # do this instead of subclass to compare objects later
     original: Union[ForecastObservation, ForecastAggregate]
     interval_value_type: str
