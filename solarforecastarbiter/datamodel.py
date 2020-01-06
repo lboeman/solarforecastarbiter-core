@@ -1126,6 +1126,14 @@ class RawReportPlots(BaseModel):
 
 
 @dataclass(frozen=True)
+class ReportMessage(BaseModel):
+    message: str
+    step: str
+    level: str
+    function: str
+
+
+@dataclass(frozen=True)
 class RawReport(BaseModel):
     """
     Class for holding the result of processing a report request including
@@ -1136,6 +1144,7 @@ class RawReport(BaseModel):
     plots: RawReportPlots
     metrics: Tuple[MetricResult, ...]
     processed_forecasts_observations: Tuple[ProcessedForecastObservation, ...]
+    messages: Tuple[ReportMessage, ...] = ()
 
 
 @dataclass(frozen=True)
