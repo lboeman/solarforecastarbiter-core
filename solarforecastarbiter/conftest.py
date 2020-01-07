@@ -1326,11 +1326,10 @@ def raw_report(report_objects, metrics):
     )
 
     def gen(with_series):
-
         def ser(interval_length):
             ser_index = pd.date_range(
                 report.start, report.end, freq=to_offset(interval_length),
-                name='timestamp', tz='UTC')
+                name='timestamp')
             ser_value = pd.Series(
                 np.repeat(100, len(ser_index)), name='value',
                 index=ser_index)
