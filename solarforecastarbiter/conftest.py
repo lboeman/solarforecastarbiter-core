@@ -1283,7 +1283,7 @@ def metric_index():
 def metrics(metric_index):
     """Produces dummy MetricResult list for a RawReport"""
     def gen(report):
-        metrics = []
+        metrics = ()
         for fxobs in report.forecast_observations:
             values = []
             if hasattr(fxobs, 'observation'):
@@ -1308,7 +1308,8 @@ def metrics(metric_index):
                     }
                 ))
             metrics_dict['values'] = values
-            metrics.append(datamodel.MetricResult.from_dict(metrics_dict))
+            metrics = metrics + (
+                datamodel.MetricResult.from_dict(metrics_dict),)
         return metrics
     return gen
 
