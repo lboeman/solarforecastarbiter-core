@@ -428,22 +428,6 @@ def test_aggregate_observation_dict_roundtrip(aggregate_observations):
     assert aggobs_from_dict == aggobs
 
 
-def test_forecast_sfh_site_dict(single_forecast_text, site_text):
-    forecast_dict = json.loads(single_forecast_text)
-    site_dict = json.loads(site_text)
-    forecast_dict['site'] = site_dict
-    forecast = datamodel.Forecast.from_dict(forecast_dict)
-    assert isinstance(forecast.site, datamodel.Site)
-
-
-def test_forecast_sfh_aggregate_dict(single_forecast_text, aggregate):
-    forecast_dict = json.loads(single_forecast_text)
-    aggregate_dict = aggregate.to_dict()
-    forecast_dict['aggregate'] = aggregate_dict
-    forecast = datamodel.Forecast.from_dict(forecast_dict)
-    assert isinstance(forecast.aggregate, datamodel.Aggregate)
-
-
 @pytest.fixture
 def objects_from_attrs(mocker):
     """Takes a list of lists with tupples of (attr_name, value)
@@ -462,20 +446,18 @@ def objects_from_attrs(mocker):
 
 
 def test___check_units__(mocker, objects_from_attrs):
-    objects = []
-    things = objects_from_attrs(
+    things_with_units = objects_from_attrs(
         [[('units', u)] for u in ['W/M^2', 'W/M^2', 'W/M^2', 'W/M^2', 'W/M^2']]
     )
-    datamodel.__check_units__(*things)
+    datamodel.__check_units__(*things_with_units)
 
 
 def test___check_units___error(mocker, objects_from_attrs):
-    objects = []
-    things = objects_from_attrs(
+    things_with_units = objects_from_attrs(
         [[('units', u)] for u in ['W/M^2', 'different', 'W/M^2', 'W/M^2']]
     )
     with pytest.raises(ValueError):
-        datamodel.__check_units__(*things)
+        datamodel.__check_units__(*things_with_units)
 
 
 @pytest.mark.parametrize('fx_int, fx_label, obs_int, obs_label', [
@@ -488,7 +470,7 @@ def test___check_interval_compatibility__(
              (('interval_length', obs_int), ('interval_label', obs_label))]
     forecast_and_observation = objects_from_attrs(attrs)
     datamodel.__check_interval_compatibility__(*forecast_and_observation)
-     
+
 
 def test___check_interval_compatibility__bad_labels(objects_from_attrs):
     attrs = [(('interval_length', 5), ('interval_label', 'instant')),
@@ -506,20 +488,37 @@ def test___check_interval_compatibility__bad_length(objects_from_attrs):
         datamodel.__check_interval_compatibility__(*forecast_and_observation)
 
 
-def test_base_filter_from_dict():
-    # :961
-    # TODO: generally test from dict, but with value range in the dict
-    #       This *may* just need to be added to another test.
-    pass
+def test_base_filter_from_dict_error():
+    with pytest.raises(NotImplementedError):
+        datamodel.BaseFilter.from_dict({'spicyness': 'very'})
 
 
-def test_quality_flag_filter_post_init():
-    # 987
-    # TODO: test with invalid quality flag to raise valueerror
-    pass
+def test_quality_flag_filter_post_init_error():
+    with pytest.raises(ValueError):
+        datamodel.QualityFlagFilter.from_dict(
+            {'quality_flags': ['spicy_filter']})
 
 
-def test_metric_result_post_init():
-    # :1102
-    # TODO: test raising a valueerror when neither or both obs_id and agg_id
-    pass
+def test_metric_result_post_init_error(metric_result_dict):
+    metric_result_dict['aggregate_id'] = None
+    metric_result_dict['observation_id'] = None
+    with pytest.raises(ValueError):
+        datamodel.MetricResult.from_dict(metric_result_dict)
+
+
+# These 'sfp' tests check that behavior found in the _special_field_processing
+# functions is maintained after removing the code.
+def test_forecast_sfp_site_dict(single_forecast_text, site_text):
+    forecast_dict = json.loads(single_forecast_text)
+    site_dict = json.loads(site_text)
+    forecast_dict['site'] = site_dict
+    forecast = datamodel.Forecast.from_dict(forecast_dict)
+    assert isinstance(forecast.site, datamodel.Site)
+
+
+def test_forecast_sfp_aggregate_dict(single_forecast_text, aggregate):
+    forecast_dict = json.loads(single_forecast_text)
+    aggregate_dict = aggregate.to_dict()
+    forecast_dict['aggregate'] = aggregate_dict
+    forecast = datamodel.Forecast.from_dict(forecast_dict)
+    assert isinstance(forecast.aggregate, datamodel.Aggregate)
