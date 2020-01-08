@@ -1280,7 +1280,7 @@ def metric_index():
 
 
 @pytest.fixture
-def metrics(metric_index):
+def report_metrics(metric_index):
     """Produces dummy MetricResult list for a RawReport"""
     def gen(report):
         metrics = ()
@@ -1315,7 +1315,7 @@ def metrics(metric_index):
 
 
 @pytest.fixture()
-def raw_report(report_objects, metrics):
+def raw_report(report_objects, report_metrics):
     report, obs, fx0, fx1, agg, fxagg = report_objects
     meta = datamodel.ReportMetadata(
         name=report.name,
@@ -1368,7 +1368,7 @@ def raw_report(report_objects, metrics):
             forecast_values=ser(ilagg) if with_series else fxagg.forecast_id,
             observation_values=ser(ilagg) if with_series else agg.aggregate_id
         )
-        raw = datamodel.RawReport(meta, 'template', metrics(report),
+        raw = datamodel.RawReport(meta, 'template', report_metrics(report),
                                   (fxobs0, fxobs1, fxagg_))
         return raw
     return gen
@@ -1597,3 +1597,96 @@ def aggregate_prob_forecast(aggregate_prob_forecast_text,
         provider=fx_dict.get('provider', ''),
         axis=fx_dict['axis'],
         constant_values=(agg_prob_forecast_constant_value, ))
+
+
+@pytest.fixture
+def metric_value_dict():
+    return {
+        'category': 'total',
+        'metric': 'mae',
+        'index': 1,
+        'value': 1,
+    }
+
+
+@pytest.fixture
+def metric_value(metric_value_dict):
+    return datamodel.MetricValue.from_dict(metric_value_dict)
+
+
+@pytest.fixture
+def metric_result_dict(metric_value_dict):
+    return {
+        'name': 'total tucson ghi mae',
+        'forecast_id': 'fxid',
+        'values': [metric_value_dict],
+        'observation_id': 'obsid',
+        'aggregate_id': None,
+    }
+
+
+@pytest.fixture
+def metric_result(metric_result_dict):
+    return datamodel.MetricResult.from_dict(metric_result_dict)
+
+
+@pytest.fixture
+def validation_result_dict():
+    return {
+        'flag': 2,
+        'count': 1,
+    }
+
+
+@pytest.fixture
+def validation_result(validation_result_dict):
+    return datamodel.ValidationResult.from_dict(validation_result_dict)
+
+
+@pytest.fixture
+def report_metadata_dict():
+    return {
+        'name': 'Report 1',
+        'start': '2019-01-01T00:00Z',
+        'end': '2019-01-02T00:00Z',
+        'now': '2019-01-03T00:00Z',
+        'timezone': 'America/Pheonix',
+        'versions': {}
+    }
+
+
+@pytest.fixture
+def report_metadata(report_metadata_dict):
+    return datamodel.ReportMetadata.from_dict(report_metadata_dict)
+
+
+@pytest.fixture
+def report_figure_dict():
+    return {
+        'name': 'mae tucson ghi',
+        'div': '<div></div>',
+        'svg': '<svg></svg>',
+        'type': 'plot?',
+        'category': 'total',
+        'metric': 'mae'
+    }
+
+
+@pytest.fixture
+def report_figure(report_figure_dict):
+    return datamodel.ReportFigure.from_dict(report_figure_dict)
+
+
+@pytest.fixture
+def report_message_dict():
+    return {
+        'message': 'Report was bad',
+        'step': 'calculating metrics',
+        'level': 'exception',
+        'function': 'calculate_deterministic_metrics',
+    }
+
+
+@pytest.fixture
+def report_message(report_message_dict):
+    return datamodel.ReportMessage.from_dict(report_message_dict)

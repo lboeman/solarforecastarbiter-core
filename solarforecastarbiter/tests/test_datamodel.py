@@ -17,7 +17,9 @@ from solarforecastarbiter import datamodel
                         'probabilisticforecast', 'aggregate',
                         'aggregateforecast', 'aggregateprobforecast',
                         'report', 'quality_filter',
-                        'timeofdayfilter', 'valuefilter'])
+                        'timeofdayfilter', 'valuefilter', 'metricvalue',
+                        'metricresult', 'validationresult', 'reportmetadata',
+                        'reportfigure', 'reportmessage'])
 def pdid_params(request, many_sites, many_sites_text, single_observation,
                 single_observation_text, single_site,
                 single_forecast_text, single_forecast,
@@ -31,7 +33,11 @@ def pdid_params(request, many_sites, many_sites_text, single_observation,
                 agg_prob_forecast_constant_value,
                 report_objects, report_dict, quality_filter,
                 quality_filter_dict, timeofdayfilter,
-                timeofdayfilter_dict, valuefilter, valuefilter_dict):
+                timeofdayfilter_dict, valuefilter, valuefilter_dict,
+                metric_value_dict, metric_value, metric_result_dict,
+                metric_result, validation_result_dict, validation_result,
+                report_metadata_dict, report_metadata, report_figure_dict,
+                report_figure, report_message_dict, report_message):
     if request.param == 'site':
         return (many_sites[0], json.loads(many_sites_text)[0],
                 datamodel.Site)
@@ -105,6 +111,20 @@ def pdid_params(request, many_sites, many_sites_text, single_observation,
     elif request.param == 'valuefilter':
         return (valuefilter, valuefilter_dict,
                 datamodel.ValueFilter)
+    elif request.param == 'metricvalue':
+        return (metric_value, metric_value_dict, datamodel.MetricValue)
+    elif request.param == 'metricresult':
+        return (metric_result, metric_result_dict, datamodel.MetricResult)
+    elif request.param == 'validationresult':
+        return (validation_result, validation_result_dict,
+                datamodel.ValidationResult)
+    elif request.param == 'reportmetadata':
+        return (report_metadata, report_metadata_dict,
+                datamodel.ReportMetadata)
+    elif request.param == 'reportfigure':
+        return (report_figure, report_figure_dict, datamodel.ReportFigure)
+    elif request.param == 'reportmessage':
+        return (report_message, report_message_dict, datamodel.ReportMessage)
 
 
 @pytest.mark.parametrize('extra', [
@@ -396,3 +416,47 @@ def test___check_categories__():
     datamodel.__check_categories__(['total', 'weekday'])
     with pytest.raises(ValueError):
         datamodel.__check_categories__(['bad', 'very bad'])
+
+
+def test_aggregate_special_field_processing():
+    # :520-524
+    # TODO: test effective_until and observation_deleted at
+    pass
+
+
+def test_forecast_special_field_handling():
+    # :704
+    # TODO: test forecast datamodel loading when site or aggregate is a dict
+    pass
+
+
+def test_probabilistic_forecast__check_units__():
+    # :888
+    # TODO: test that value error is raised for different units for constants
+    pass
+
+
+def test_probabilistic_forecast_interval_compatibility():
+    # :893 897
+    # TODO: test that observation does not have greater interval length
+    #       also instant vs non-instant, should this exist for regular fx?
+    pass
+
+
+def test_base_filter_from_dict():
+    # :961
+    # TODO: generally test from dict, but with value range in the dict
+    #       This *may* just need to be added to another test.
+    pass
+
+
+def test_quality_flag_filter_post_init():
+    # 987
+    # TODO: test with invalid quality flag to raise valueerror
+    pass
+
+
+def test_metric_result_post_init():
+    # :1102
+    # TODO: test raising a valueerror when neither or both obs_id and agg_id
+    pass
