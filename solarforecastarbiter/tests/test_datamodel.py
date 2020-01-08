@@ -522,3 +522,20 @@ def test_forecast_sfp_aggregate_dict(single_forecast_text, aggregate):
     forecast_dict['aggregate'] = aggregate_dict
     forecast = datamodel.Forecast.from_dict(forecast_dict)
     assert isinstance(forecast.aggregate, datamodel.Aggregate)
+
+
+@pytest.mark.parametrize('key,value,expected', [
+    ('effective_until', None, None),
+    ('effective_until', '2020-01-01T00:00Z',
+     pd.Timestamp('2020-01-01T00:00Z')),
+    ('observation_deleted_at', None, None),
+    ('observation_deleted_at', '2020-01-01T00:00Z',
+     pd.Timestamp('2020-01-01T00:00Z'))
+])
+def test_aggregate_observation_sfp(
+        aggregate_observations, key, value, expected):
+    aggobs = aggregate_observations[0]
+    aggobs_dict = aggobs.to_dict()
+    aggobs_dict[key] = value
+    aggobs_from_dict = datamodel.AggregateObservation.from_dict(aggobs_dict)
+    assert getattr(aggobs_from_dict, key) == expected
