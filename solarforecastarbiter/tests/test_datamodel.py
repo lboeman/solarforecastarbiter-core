@@ -104,13 +104,13 @@ def pdid_params(request, many_sites, many_sites_text, single_observation,
         return (report, report_dict.copy(), datamodel.Report)
     elif request.param == 'quality_filter':
         return (quality_filter, quality_filter_dict,
-                datamodel.QualityFlagFilter)
+                datamodel.BaseFilter)
     elif request.param == 'timeofdayfilter':
         return (timeofdayfilter, timeofdayfilter_dict,
-                datamodel.TimeOfDayFilter)
+                datamodel.BaseFilter)
     elif request.param == 'valuefilter':
         return (valuefilter, valuefilter_dict,
-                datamodel.ValueFilter)
+                datamodel.BaseFilter)
     elif request.param == 'metricvalue':
         return (metric_value, metric_value_dict, datamodel.MetricValue)
     elif request.param == 'metricresult':
@@ -163,6 +163,9 @@ def test_from_dict_into_datamodel_no_extra(pdid_params):
 
 def test_from_dict_no_extra(pdid_params):
     expected, obj_dict, model = pdid_params
+    if model == datamodel.BaseFilter:
+        pytest.skip('Skipping test of from_dict no extra, BaseFilter class '
+                    'contains no fields but may instantiate child classes.')
     names = [f.name for f in fields(model)]
     for key in list(obj_dict.keys()):
         if key not in names:
@@ -418,29 +421,89 @@ def test___check_categories__():
         datamodel.__check_categories__(['bad', 'very bad'])
 
 
-def test_aggregate_special_field_processing():
-    # :520-524
-    # TODO: test effective_until and observation_deleted at
-    pass
+def test_aggregate_observation_dict_roundtrip(aggregate_observations):
+    aggobs = aggregate_observations[0]
+    aggobs_dict = aggobs.to_dict()
+    aggobs_from_dict = datamodel.AggregateObservation.from_dict(aggobs_dict)
+    assert aggobs_from_dict == aggobs
 
 
-def test_forecast_special_field_handling():
-    # :704
-    # TODO: test forecast datamodel loading when site or aggregate is a dict
-    pass
+def test_forecast_sfh_site_dict(single_forecast_text, site_text):
+    forecast_dict = json.loads(single_forecast_text)
+    site_dict = json.loads(site_text)
+    forecast_dict['site'] = site_dict
+    forecast = datamodel.Forecast.from_dict(forecast_dict)
+    assert isinstance(forecast.site, datamodel.Site)
 
 
-def test_probabilistic_forecast__check_units__():
-    # :888
-    # TODO: test that value error is raised for different units for constants
-    pass
+def test_forecast_sfh_aggregate_dict(single_forecast_text, aggregate):
+    forecast_dict = json.loads(single_forecast_text)
+    aggregate_dict = aggregate.to_dict()
+    forecast_dict['aggregate'] = aggregate_dict
+    forecast = datamodel.Forecast.from_dict(forecast_dict)
+    assert isinstance(forecast.aggregate, datamodel.Aggregate)
 
 
-def test_probabilistic_forecast_interval_compatibility():
-    # :893 897
-    # TODO: test that observation does not have greater interval length
-    #       also instant vs non-instant, should this exist for regular fx?
-    pass
+@pytest.fixture
+def objects_from_attrs(mocker):
+    """Takes a list of lists with tupples of (attr_name, value)
+       and creates a listed of Mock objects with their attributes
+       set to those values
+    """
+    def fn(attr_list):
+        things_with_attrs = []
+        for attr_tuples in attr_list:
+            with_attr = mocker.Mock()
+            for (attr_name, attr_value) in attr_tuples:
+                setattr(with_attr, attr_name, attr_value)
+            things_with_attrs.append(with_attr)
+        return things_with_attrs
+    return fn
+
+
+def test___check_units__(mocker, objects_from_attrs):
+    objects = []
+    things = objects_from_attrs(
+        [[('units', u)] for u in ['W/M^2', 'W/M^2', 'W/M^2', 'W/M^2', 'W/M^2']]
+    )
+    datamodel.__check_units__(*things)
+
+
+def test___check_units___error(mocker, objects_from_attrs):
+    objects = []
+    things = objects_from_attrs(
+        [[('units', u)] for u in ['W/M^2', 'different', 'W/M^2', 'W/M^2']]
+    )
+    with pytest.raises(ValueError):
+        datamodel.__check_units__(*things)
+
+
+@pytest.mark.parametrize('fx_int, fx_label, obs_int, obs_label', [
+    (15, 'instant', 15, 'instant'), (1, 'ending', 1, 'ending'),
+    (5, 'beginning', 5, 'beginning'), (15, 'beginning', 5, 'instant'),
+])
+def test___check_interval_compatibility__(
+        fx_int, fx_label, obs_int, obs_label, objects_from_attrs):
+    attrs = [(('interval_length', fx_int), ('interval_label', fx_label)),
+             (('interval_length', obs_int), ('interval_label', obs_label))]
+    forecast_and_observation = objects_from_attrs(attrs)
+    datamodel.__check_interval_compatibility__(*forecast_and_observation)
+     
+
+def test___check_interval_compatibility__bad_labels(objects_from_attrs):
+    attrs = [(('interval_length', 5), ('interval_label', 'instant')),
+             (('interval_length', 5), ('interval_label', 'beginning'))]
+    forecast_and_observation = objects_from_attrs(attrs)
+    with pytest.raises(ValueError):
+        datamodel.__check_interval_compatibility__(*forecast_and_observation)
+
+
+def test___check_interval_compatibility__bad_length(objects_from_attrs):
+    attrs = [(('interval_length', 5), ('interval_label', 'instant')),
+             (('interval_length', 15), ('interval_label', 'instant'))]
+    forecast_and_observation = objects_from_attrs(attrs)
+    with pytest.raises(ValueError):
+        datamodel.__check_interval_compatibility__(*forecast_and_observation)
 
 
 def test_base_filter_from_dict():
