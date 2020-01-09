@@ -149,15 +149,16 @@ def basefilter_params(
         request, valuefilter, valuefilter_dict, quality_filter,
         quality_filter_dict, timeofdayfilter, timeofdayfilter_dict):
     parameters = [
-        (valuefilter, valuefilter_dict, datamodel.ValueFilter),
-        (quality_filter, quality_filter_dict, datamodel.QualityFlagFilter),
-        (timeofdayfilter, timeofdayfilter_dict, datamodel.TimeOfDayFilter)]
+        (valuefilter, valuefilter_dict),
+        (quality_filter, quality_filter_dict),
+        (timeofdayfilter, timeofdayfilter_dict)]
     return parameters[request.param]
 
 
 def test_base_filter_from_dict_into_datamodel(basefilter_params):
-    expected, obj_dict, model = basefilter_params
-    assert model.from_dict(obj_dict, raise_on_extra=True) == expected
+    expected, obj_dict = basefilter_params
+    out = datamodel.BaseFilter.from_dict(obj_dict, raise_on_extra=True)
+    assert out == expected
 
 
 def test_from_dict_into_datamodel_missing_field(pdid_params):
