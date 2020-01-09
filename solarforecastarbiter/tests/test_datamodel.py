@@ -110,13 +110,13 @@ def pdid_params(request, many_sites, many_sites_text, single_observation,
         return (report, report_dict.copy(), datamodel.Report)
     elif request.param == 'quality_filter':
         return (quality_filter, quality_filter_dict,
-                datamodel.BaseFilter)
+                datamodel.QualityFlagFilter)
     elif request.param == 'timeofdayfilter':
         return (timeofdayfilter, timeofdayfilter_dict,
-                datamodel.BaseFilter)
+                datamodel.TimeOfDayFilter)
     elif request.param == 'valuefilter':
         return (valuefilter, valuefilter_dict,
-                datamodel.BaseFilter)
+                datamodel.ValueFilter)
     elif request.param == 'metricvalue':
         return (metric_value, metric_value_dict, datamodel.MetricValue)
     elif request.param == 'metricresult':
@@ -142,6 +142,22 @@ def test_from_dict_into_datamodel(extra, pdid_params):
     obj_dict.update(extra)
     out = model.from_dict(obj_dict)
     assert out == expected
+
+
+@pytest.fixture(params=[0, 1, 2])
+def basefilter_params(
+        request, valuefilter, valuefilter_dict, quality_filter,
+        quality_filter_dict, timeofdayfilter, timeofdayfilter_dict):
+    parameters = [
+        (valuefilter, valuefilter_dict, datamodel.ValueFilter),
+        (quality_filter, quality_filter_dict, datamodel.QualityFlagFilter),
+        (timeofdayfilter, timeofdayfilter_dict, datamodel.TimeOfDayFilter)]
+    return parameters[request.param]
+
+
+def test_base_filter_from_dict_into_datamodel(basefilter_params):
+    expected, obj_dict, model = basefilter_params
+    assert model.from_dict(obj_dict, raise_on_extra=True) == expected
 
 
 def test_from_dict_into_datamodel_missing_field(pdid_params):
@@ -546,3 +562,16 @@ def test_aggregate_observation_sfp(
     aggobs_dict[key] = value
     aggobs_from_dict = datamodel.AggregateObservation.from_dict(aggobs_dict)
     assert getattr(aggobs_from_dict, key) == expected
+
+
+@pytest.mark.parametrize('key,value,expected', [
+    ('effective_until', 'bad', None),
+    ('observation_deleted_at', 'bad', None),
+])
+def test_aggregate_observation_sfp_invalid(
+        aggregate_observations, key, value, expected):
+    aggobs = aggregate_observations[0]
+    aggobs_dict = aggobs.to_dict()
+    aggobs_dict[key] = value
+    with pytest.raises(TypeError):
+        datamodel.AggregateObservation.from_dict(aggobs_dict)

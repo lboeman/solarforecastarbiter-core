@@ -16,6 +16,34 @@ def report_with_raw(report_dict, raw_report):
     return report
 
 
+@pytest.fixture
+def raw_report_pfxobs_values(raw_report):
+    # Useful for testing the valid types for a ProcessedForecastObservation's
+    # values fields which can be either pd.Series, str or None
+    def replace_values(value):
+        raw = raw_report(False)
+        raw = raw.replace(
+            processed_forecasts_observations=tuple(
+                pfxobs.replace(
+                    forecast_values=value,
+                    observation_values=value,
+                )
+                for pfxobs in raw.processed_forecasts_observations
+            )
+        )
+        return raw
+    return replace_values
+
+
+@pytest.fixture
+def set_report_pfxobs_values(report_dict, raw_report_pfxobs_values):
+    def set_pfxobs_values(value):
+        report_dict['raw_report'] = raw_report_pfxobs_values(value)
+        report = datamodel.Report.from_dict(report_dict)
+        return report
+    return set_pfxobs_values
+
+
 def test_construct_metrics_cds(report_with_raw):
     report = report_with_raw
     metrics = report.raw_report.metrics
@@ -71,6 +99,13 @@ def test_construct_metrics_cds_with_rename(report_with_raw):
     )
 
 
+def test_construct_metric_cds_no_values():
+    # Iterative metrics cds creation just build empty cds from an empty
+    # dataframe if no MetricResults are found in the metrics tuple
+    cds = figures.construct_metrics_cds(())
+    assert cds.data['index'].size == 0
+
+
 def test_construct_timeseries_cds(report_with_raw):
     report = report_with_raw
     raw_report = report.raw_report
@@ -97,6 +132,14 @@ def test_construct_timeseries_cds(report_with_raw):
     assert 'observation_hash' in metadata_cds.data
     assert 'forecast_hash' in metadata_cds.data
     assert 'observation_color' in metadata_cds.data
+
+
+@pytest.mark.parametrize('value', ['someid', None])
+def test_construct_timeseries_cds_no_data(
+        set_report_pfxobs_values, value):
+    report = set_report_pfxobs_values(value)
+    with pytest.raises(ValueError):
+        timeseires_cds, metadata_cds = figures.construct_timeseries_cds(report)
 
 
 @pytest.mark.parametrize('hash_key', [
