@@ -16,7 +16,7 @@ from solarforecastarbiter import datamodel
                         'probabilisticforecastconstantvalue',
                         'probabilisticforecast', 'aggregate',
                         'aggregateforecast', 'aggregateprobforecast',
-                        'report', 'quality_filter',
+                        'aggregateobservation', 'report', 'quality_filter',
                         'timeofdayfilter', 'valuefilter', 'metricvalue',
                         'metricresult', 'validationresult', 'reportmetadata',
                         'reportfigure', 'reportmessage'])
@@ -31,6 +31,8 @@ def pdid_params(request, many_sites, many_sites_text, single_observation,
                 aggregateforecast, aggregate_prob_forecast,
                 aggregate_prob_forecast_text,
                 agg_prob_forecast_constant_value,
+                single_aggregate_observation,
+                single_aggregate_observation_text,
                 report_objects, report_dict, quality_filter,
                 quality_filter_dict, timeofdayfilter,
                 timeofdayfilter_dict, valuefilter, valuefilter_dict,
@@ -99,6 +101,10 @@ def pdid_params(request, many_sites, many_sites_text, single_observation,
         fxobs_dict = {'forecast': aggfx_dict, 'aggregate': agg_dict}
         fxobs = datamodel.ForecastAggregate(aggregateforecast, aggregate)
         return (fxobs, fxobs_dict, datamodel.ForecastAggregate)
+    elif request.param == 'aggregateobservation':
+        aggobs_dict = json.loads(single_aggregate_observation_text)
+        return (single_aggregate_observation, aggobs_dict,
+                datamodel.AggregateObservation)
     elif request.param == 'report':
         report, *_ = report_objects
         return (report, report_dict.copy(), datamodel.Report)
@@ -421,13 +427,6 @@ def test___check_categories__():
         datamodel.__check_categories__(['bad', 'very bad'])
 
 
-def test_aggregate_observation_dict_roundtrip(aggregate_observations):
-    aggobs = aggregate_observations[0]
-    aggobs_dict = aggobs.to_dict()
-    aggobs_from_dict = datamodel.AggregateObservation.from_dict(aggobs_dict)
-    assert aggobs_from_dict == aggobs
-
-
 @pytest.fixture
 def objects_from_attrs(mocker):
     """Takes a list of lists with tupples of (attr_name, value)
@@ -508,18 +507,26 @@ def test_metric_result_post_init_error(metric_result_dict):
 
 # These 'sfp' tests check that behavior found in the _special_field_processing
 # functions is maintained after removing the code.
-def test_forecast_sfp_site_dict(single_forecast_text, site_text):
+@pytest.mark.parametrize('sitef', [
+    lambda x: x,
+    lambda x: x.to_dict(),
+    pytest.param(lambda x: 'other', marks=pytest.mark.xfail(strict=True))
+])
+def test_forecast_sfp_site_dict(single_forecast_text, single_site, sitef):
     forecast_dict = json.loads(single_forecast_text)
-    site_dict = json.loads(site_text)
-    forecast_dict['site'] = site_dict
+    forecast_dict['site'] = sitef(single_site)
     forecast = datamodel.Forecast.from_dict(forecast_dict)
     assert isinstance(forecast.site, datamodel.Site)
 
 
-def test_forecast_sfp_aggregate_dict(single_forecast_text, aggregate):
+@pytest.mark.parametrize('aggf', [
+    lambda x: x,
+    lambda x: x.to_dict(),
+    pytest.param(lambda x: 'other', marks=pytest.mark.xfail(strict=True))
+])
+def test_forecast_sfp_aggregate_dict(single_forecast_text, aggregate, aggf):
     forecast_dict = json.loads(single_forecast_text)
-    aggregate_dict = aggregate.to_dict()
-    forecast_dict['aggregate'] = aggregate_dict
+    forecast_dict['aggregate'] = aggf(aggregate)
     forecast = datamodel.Forecast.from_dict(forecast_dict)
     assert isinstance(forecast.aggregate, datamodel.Aggregate)
 

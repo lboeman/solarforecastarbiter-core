@@ -1368,7 +1368,20 @@ def raw_report(report_objects, report_metrics):
             forecast_values=ser(ilagg) if with_series else fxagg.forecast_id,
             observation_values=ser(ilagg) if with_series else agg.aggregate_id
         )
-        raw = datamodel.RawReport(meta, 'template', report_metrics(report),
+        figs = datamodel.RawReportPlots(
+            '1.4.0', '<script></script', (
+                datamodel.ReportFigure.from_dict(
+                    {
+                        'name': 'mae tucson ghi',
+                        'div': '<div></div>',
+                        'svg': '<svg></svg>',
+                        'type': 'plot?',
+                        'category': 'total',
+                        'metric': 'mae'
+                    }
+                ),)
+        )
+        raw = datamodel.RawReport(meta, figs, report_metrics(report),
                                   (fxobs0, fxobs1, fxagg_))
         return raw
     return gen
@@ -1445,6 +1458,20 @@ def aggregate_observations(aggregate_text, many_observations):
         observation_deleted_at=_tstamp(o['observation_deleted_at']))
         for o in aggd['observations']])
     return aggobs
+
+
+@pytest.fixture()
+def single_aggregate_observation_text(single_observation_text_with_site_text):
+    return (b'{"observation": ' + single_observation_text_with_site_text +
+            b', "effective_from": "2019-01-03T13:00:00Z"}')
+
+
+@pytest.fixture()
+def single_aggregate_observation(single_observation):
+    return datamodel.AggregateObservation(
+        observation=single_observation,
+        effective_from=pd.Timestamp('2019-01-03T13:00:00Z')
+    )
 
 
 @pytest.fixture()
