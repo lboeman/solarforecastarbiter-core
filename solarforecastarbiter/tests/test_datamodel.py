@@ -185,9 +185,6 @@ def test_from_dict_into_datamodel_no_extra(pdid_params):
 
 def test_from_dict_no_extra(pdid_params):
     expected, obj_dict, model = pdid_params
-    if model == datamodel.BaseFilter:
-        pytest.skip('Skipping test of from_dict no extra, BaseFilter class '
-                    'contains no fields but may instantiate child classes.')
     names = [f.name for f in fields(model)]
     for key in list(obj_dict.keys()):
         if key not in names:
